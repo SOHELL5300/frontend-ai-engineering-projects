@@ -1,16 +1,37 @@
-# React + Vite
+# Frontend AI Engineering Projects
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A portfolio project series focused on building AI-powered frontend systems using React, JavaScript, and modern frontend architecture.
 
-Currently, two official plugins are available:
+## Positioning
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+React.js Developer building AI-powered frontend product experiences.
 
-## React Compiler
+## Projects
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| No. | Project | Description |
+|---|---|---|
+| 01 | AI Chat UI | React-based AI assistant interface with mock AI responses, loading state, error state, copy, regenerate, and clear chat features. |
 
-## Expanding the ESLint configuration
+## Goal
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The goal of this repository is to show practical frontend engineering skills for AI product interfaces.
+
+This includes:
+
+- React component architecture
+- AI chat UI patterns
+- Async state handling
+- Loading and error states
+- API-ready service layers
+- Reusable UI components
+- Scalable project structure
+- Interview-ready project explanations
+
+## Project 1
+
+### AI Chat UI
+
+Location:
+
+```txt
+projects/01-ai-chat-ui
