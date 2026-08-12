@@ -1,0 +1,392 @@
+:root {
+  --background: #f6f7fb;
+  --surface: #ffffff;
+  --surface-soft: #f1f5f9;
+  --text-primary: #111827;
+  --text-secondary: #5b6472;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --danger-bg: #fef2f2;
+  --danger-text: #991b1b;
+  --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+textarea {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.appShell {
+  min-height: 100vh;
+}
+
+.header {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 22px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logoText {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.navLinks {
+  display: flex;
+  gap: 18px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.heroSection {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 54px 0 34px;
+}
+
+.heroContent {
+  max-width: 820px;
+}
+
+.eyebrow,
+.sectionLabel {
+  margin: 0 0 10px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(38px, 6vw, 72px);
+  line-height: 0.95;
+  letter-spacing: -0.07em;
+}
+
+.heroDescription {
+  margin: 22px 0 0;
+  max-width: 720px;
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.workspace {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 60px;
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.inputPanel,
+.resultPanel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.inputPanel {
+  padding: 22px;
+  position: sticky;
+  top: 20px;
+}
+
+.resultPanel {
+  min-height: 560px;
+  padding: 22px;
+}
+
+.panelHeader,
+.resultHeader,
+.inputFooter,
+.priorityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panelHeader h2,
+.resultHeader h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.meetingTextarea {
+  width: 100%;
+  min-height: 420px;
+  margin-top: 20px;
+  padding: 18px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.6;
+  outline: none;
+}
+
+.meetingTextarea:focus {
+  border-color: var(--primary);
+  background: #ffffff;
+}
+
+.inputFooter {
+  margin-top: 16px;
+}
+
+.inputFooter p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+}
+
+.primaryButton {
+  padding: 13px 20px;
+  background: var(--primary);
+  color: white;
+}
+
+.primaryButton:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.secondaryButton {
+  padding: 11px 16px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+}
+
+.secondaryButton:hover {
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.emptyState,
+.loadingBox {
+  min-height: 500px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 30px;
+}
+
+.emptyState > *,
+.loadingBox > * {
+  max-width: 420px;
+}
+
+.emptyIcon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background: var(--surface-soft);
+  font-size: 34px;
+}
+
+.emptyState h2 {
+  margin: 0 0 12px;
+  font-size: 26px;
+  letter-spacing: -0.04em;
+}
+
+.emptyState p,
+.loadingBox p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.spinner {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 16px;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.errorBox {
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.errorBox p {
+  margin: 8px 0 0;
+}
+
+.notesResult {
+  display: grid;
+  gap: 16px;
+}
+
+.sectionCard {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.sectionCard h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.summaryText {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.contentList {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.contentList li + li {
+  margin-top: 8px;
+}
+
+.riskList li {
+  color: #92400e;
+}
+
+.actionGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.actionCard {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+
+.actionCard h4 {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.actionCard p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.priorityBadge {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.footer {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 40px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .inputPanel {
+    position: static;
+  }
+
+  .meetingTextarea {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 640px) {
+  .header,
+  .panelHeader,
+  .resultHeader,
+  .inputFooter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+  }
+
+  .navLinks {
+    display: none;
+  }
+
+  .resultPanel,
+  .inputPanel {
+    border-radius: 18px;
+  }
+}
