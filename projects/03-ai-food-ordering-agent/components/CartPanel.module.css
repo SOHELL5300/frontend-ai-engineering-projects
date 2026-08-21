@@ -1,0 +1,110 @@
+.cartPanel {
+  background: white;
+  border-radius: 24px;
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  position: sticky;
+  top: 24px;
+}
+
+.cartPanel h2 {
+  color: #0f172a;
+  margin-bottom: 16px;
+}
+
+.cartHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.cartHeader p {
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.clearButton {
+  border: none;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.cartItems {
+  display: grid;
+  gap: 14px;
+}
+
+.cartItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 14px;
+}
+
+.cartItem h3 {
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.cartItem p {
+  color: #64748b;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+.cartItem button {
+  border: none;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+.cartItem strong {
+  color: #ea580c;
+  white-space: nowrap;
+}
+
+.bill {
+  margin-top: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.bill div {
+  display: flex;
+  justify-content: space-between;
+  color: #475569;
+}
+
+.grandTotal {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+  color: #0f172a !important;
+  font-size: 18px;
+}
+
+.placeButton {
+  width: 100%;
+  border: none;
+  background: #16a34a;
+  color: white;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  margin-top: 20px;
+  cursor: pointer;
+}
+
+.placeButton:hover {
+  background: #15803d;
+}

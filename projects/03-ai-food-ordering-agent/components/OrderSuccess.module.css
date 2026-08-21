@@ -1,0 +1,44 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 50;
+}
+
+.successCard {
+  background: white;
+  padding: 32px;
+  border-radius: 24px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+.icon {
+  font-size: 48px;
+  margin-bottom: 14px;
+}
+
+.successCard h2 {
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.successCard p {
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.successCard button {
+  border: none;
+  background: #f97316;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 800;
+}
