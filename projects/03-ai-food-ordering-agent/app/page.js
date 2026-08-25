@@ -7,10 +7,21 @@ import OrderSuccess from "@/components/OrderSuccess";
 export default function Home() {
   return (
     <main className="page">
-      <div className="pageHeader">
+      {/* <div className="pageHeader">
         <p className="eyebrow">Frontend AI Engineering Project 3</p>
         <h1>AI Food Ordering Agent</h1>
         <p>
+          A voice-enabled AI assistant that converts natural language food
+          commands into real cart actions.
+        </p>
+      </div> */}
+
+       <div className="pageHeader">
+        <p className="eyebrow">
+          <span className="pulseDot" /> Frontend AI Engineering Project 3
+        </p>
+        <h1 className="fadeInUp">Just Say What You're Craving</h1>
+        <p className="fadeInUp delay1">
           A voice-enabled AI assistant that converts natural language food
           commands into real cart actions.
         </p>

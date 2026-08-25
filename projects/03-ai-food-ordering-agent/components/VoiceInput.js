@@ -47,7 +47,7 @@ export default function VoiceInput({ onTranscript }) {
       className={`${styles.voiceButton} ${isListening ? styles.active : ""}`}
       onClick={startListening}
     >
-      {isListening ? "Listening..." : "🎤 Speak"}
+      {isListening ? "Listening..." : "Voice Assistant "}
     </button>
   );
 }

@@ -1,3 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+body { font-family: 'Inter', sans-serif; }
+h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; }
 * {
   box-sizing: border-box;
   padding: 0;
@@ -5,9 +9,9 @@
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f8fafe;
+  color: #0e172b;
+
 }
 
 button,
@@ -26,10 +30,27 @@ input {
   margin-bottom: 32px;
 }
 
-.eyebrow {
+/* .eyebrow {
   color: #ea580c;
   font-weight: 800;
   margin-bottom: 10px;
+} */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+.pulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.6s ease-in-out infinite;
 }
 
 .pageHeader h1 {
@@ -40,7 +61,7 @@ input {
 
 .pageHeader p {
   color: #64748b;
-  max-width: 720px;
+  max-width: 820px;
   margin: 0 auto;
   line-height: 1.6;
 }
@@ -60,4 +81,19 @@ input {
   .pageHeader h1 {
     font-size: 36px;
   }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: 0.4; }
+}
+
+.fadeInUp {
+  animation: fadeInUp 0.6s ease-out both;
+}
+.delay1 { animation-delay: 0.15s; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }

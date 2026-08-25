@@ -1,99 +1,126 @@
-import OpenAI from "openai";
+import { getAIProvider } from "@/services/ai/aiProvider";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-function buildFallbackResponse(command) {
-  return {
-    intent: "UNKNOWN",
-    restaurantName: "",
-    items: [],
-    originalCommand: command,
-  };
-}
-
+/**
+ * POST /api/parse-command
+ *
+ * Receives a natural-language command from the frontend
+ * and sends it to our configured AI provider.
+ *
+ * Example request:
+ *
+ * {
+ *   "command": "Order one masala dosa from South Kitchen"
+ * }
+ *
+ * Example response:
+ *
+ * {
+ *   "success": true,
+ *   "parsedCommand": {
+ *     "intent": "ADD_TO_CART",
+ *     "restaurantName": "South Kitchen",
+ *     "items": [
+ *       {
+ *         "name": "masala dosa",
+ *         "quantity": 1,
+ *         "modifiers": []
+ *       }
+ *     ],
+ *     "originalCommand": "Order one masala dosa from South Kitchen"
+ *   }
+ * }
+ */
 export async function POST(request) {
   try {
-    const { command } = await request.json();
+    /**
+     * Read the JSON body sent by the frontend.
+     */
+    const body = await request.json();
 
-    if (!command || !command.trim()) {
+    const command = body?.command;
+
+    /**
+     * Validate the incoming command.
+     *
+     * We don't want to send an empty command
+     * to the AI model.
+     */
+    if (!command || typeof command !== "string" || !command.trim()) {
       return Response.json(
-        { error: "Command is required." },
-        { status: 400 }
+        {
+          success: false,
+          error: "Command is required.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
-    console.log("Checking Model for the api: ", model);
+    console.log("=================================");
+    console.log("Received command:", command);
+    console.log("=================================");
 
-    const prompt = `
-You are an AI command parser for a food ordering app.
+    /**
+     * Get the currently configured AI provider.
+     *
+     * At the moment this returns Ollama.
+     *
+     * Later we can change this to OpenAI, Gemini,
+     * or another provider without modifying this API route.
+     */
+    const aiProvider = getAIProvider();
 
-Your job is to convert the user's natural language command into valid JSON only.
+    /**
+     * Ask the AI provider to understand the command.
+     */
+    const parsedCommand = await aiProvider.parseCommand(
+      command.trim()
+    );
 
-Supported intents:
-1. ADD_TO_CART
-2. REMOVE_FROM_CART
-3. CLEAR_CART
-4. PLACE_ORDER
-5. SHOW_CART
-6. UNKNOWN
+    console.log("Parsed command:", parsedCommand);
 
-Return only this JSON shape:
-{
-  "intent": "ADD_TO_CART",
-  "restaurantName": "Restaurant name if mentioned",
-  "items": [
-    {
-      "name": "Item name",
-      "quantity": 1,
-      "modifiers": ["extra cheese"]
-    }
-  ],
-  "originalCommand": "user command"
-}
-
-Rules:
-- If user wants to order/add/buy food, use ADD_TO_CART.
-- If user wants to remove an item, use REMOVE_FROM_CART.
-- If user wants to clear cart, use CLEAR_CART.
-- If user wants to place/confirm/finalize order, use PLACE_ORDER.
-- If user wants to see cart, use SHOW_CART.
-- If quantity is missing, use 1.
-- If restaurant is not mentioned, keep restaurantName empty.
-- Return JSON only. No markdown. No explanation.
-
-User command:
-"${command}"
-`;
-
-    const response = await client.responses.create({
-      model,
-      input: prompt,
-    });
-
-    const outputText = response.output_text;
-
-    let parsedCommand;
-
-    try {
-      parsedCommand = JSON.parse(outputText);
-    } catch (error) {
-      parsedCommand = buildFallbackResponse(command);
-    }
-
-    return Response.json({
-      parsedCommand,
-    });
-  } catch (error) {
-    console.error("AI command parsing failed:", error);
-
+    /**
+     * Return the structured command to the frontend.
+     */
     return Response.json(
       {
-        error: "Failed to parse command. Please try again.",
+        success: true,
+        parsedCommand,
       },
-      { status: 500 }
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    /**
+     * This error is intentionally logged on the server.
+     *
+     * During development, this allows us to see the
+     * actual Ollama error in the terminal instead of
+     * only seeing "500 Internal Server Error" in the browser.
+     */
+    console.error("=================================");
+    console.error("AI command parsing failed:");
+    console.error(error);
+    console.error("=================================");
+
+    /**
+     * Return a safe error response to the frontend.
+     *
+     * We don't expose unnecessary internal information
+     * such as stack traces to the browser.
+     */
+    return Response.json(
+      {
+        success: false,
+        error:
+          error?.message ||
+          "Failed to parse command. Please try again.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }

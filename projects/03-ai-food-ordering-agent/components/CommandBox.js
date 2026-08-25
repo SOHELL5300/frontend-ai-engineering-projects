@@ -71,7 +71,6 @@ export default function CommandBox() {
   return (
     <section className={styles.commandSection}>
       <div className={styles.header}>
-        <span className={styles.badge}>AI Command Agent</span>
         <h1>Order food using text or voice</h1>
         <p>
           Type or speak naturally. The AI will understand your command and
@@ -90,7 +89,7 @@ export default function CommandBox() {
         <div className={styles.actions}>
           <VoiceInput onTranscript={handleTranscript} />
           <button className={styles.submitButton} type="submit">
-            Run Command
+            Order
           </button>
         </div>
       </form>
