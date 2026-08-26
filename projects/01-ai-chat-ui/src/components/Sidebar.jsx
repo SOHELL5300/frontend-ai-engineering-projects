@@ -4,7 +4,6 @@ function Sidebar({ hasMessages, onClearChat, onPromptSelect }) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-logo">AI</div>
         <div>
           <h2>AI Product UI</h2>
           <p>Frontend AI Engineering</p>
