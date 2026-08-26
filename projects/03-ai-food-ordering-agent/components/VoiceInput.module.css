@@ -1,17 +1,137 @@
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
 .voiceButton {
-  border: none;
-  background: #111827;
-  color: white;
-  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid #fed7aa;
+  background: #fff7ed;
+  color: #ea580c;
+  padding: 11px 18px;
   border-radius: 12px;
   cursor: pointer;
   font-weight: 700;
+  font-size: 0.9rem;
+  transition: background 0.2s ease, border-color 0.2s ease,
+    transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .voiceButton:hover {
-  background: #020617;
+  background: #fed7aa;
+  border-color: #fdba74;
+  transform: translateY(-1px);
 }
 
+.voiceButton:active {
+  transform: translateY(0);
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.micIcon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Listening / active state */
 .active {
-  background: #dc2626;
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+  animation: micPulse 1.4s ease-in-out infinite;
+}
+
+.active:hover {
+  background: #c2410c;
+}
+
+@keyframes micPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(234, 88, 12, 0);
+  }
+}
+
+/* Animated waveform bars shown while listening */
+.waveform {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 18px;
+}
+
+.waveform span {
+  width: 3px;
+  border-radius: 2px;
+  background: #ffffff;
+  animation: waveBounce 0.9s ease-in-out infinite;
+}
+
+.waveform span:nth-child(1) {
+  height: 40%;
+  animation-delay: 0s;
+}
+.waveform span:nth-child(2) {
+  height: 100%;
+  animation-delay: 0.15s;
+}
+.waveform span:nth-child(3) {
+  height: 65%;
+  animation-delay: 0.3s;
+}
+.waveform span:nth-child(4) {
+  height: 85%;
+  animation-delay: 0.45s;
+}
+
+@keyframes waveBounce {
+  0%, 100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* "Not supported" tooltip */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #9a3412;
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease-out;
+  z-index: 10;
+}
+
+.tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #9a3412;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }

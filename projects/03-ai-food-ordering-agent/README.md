@@ -1,32 +1,50 @@
-I built Project 3 of my Frontend AI Engineering series: AI Food Ordering Agent.
+# AI Food Ordering Agent
 
-This is not just another AI text generator.
+Project 3 of my **Frontend AI Engineering Series**.
 
-The app allows users to type or speak commands like:
+An AI-powered food ordering interface that allows users to interact with a food ordering application using **natural-language text or voice commands** instead of navigating through multiple screens manually.
 
-“Order two paneer burgers from Burger House with extra cheese.”
+For example, users can say:
 
-The AI converts the natural language command into structured cart actions and updates the UI.
+> "Order two paneer burgers from Burger House with extra cheese."
 
-Tech stack:
-- Next.js
-- JavaScript
-- CSS Modules
-- OpenAI API
-- Web Speech API
-- React Context API
+The application interprets the command, extracts the user's intent, validates the requested restaurant and menu items, and converts the request into structured cart actions.
 
-Key features:
-- Voice commands
-- AI command parsing
-- Add/remove cart actions
-- Order confirmation
-- Loading/error/empty states
-- Secure API route for AI key protection
+---
 
-The biggest learning from this project:
-AI should not directly perform risky actions blindly. The better architecture is:
+## Demo
 
-User command → AI intent extraction → frontend validation → user confirmation → final action
+🎥 **Demo Video:** Coming soon
 
-This project helped me understand how AI agents can be used inside real frontend product experiences.
+💻 **Live Demo:** Not currently deployed
+
+The application currently uses **Ollama with a local LLM for AI inference during development**. The AI layer is designed to be provider-agnostic so that cloud AI providers can be integrated for production deployment without changing the core application architecture.
+
+---
+
+## Why I Built This
+
+Most AI applications stop at:
+
+> User → Prompt → AI Response
+
+I wanted to explore a more practical frontend AI architecture where the AI is responsible for **understanding user intent**, while the application remains responsible for **validation and execution**.
+
+The goal is to build an interface where users can interact with an application naturally instead of learning how to navigate traditional UI flows.
+
+For example:
+
+Traditional UI:
+
+```text
+Open restaurant
+      ↓
+Search menu
+      ↓
+Select item
+      ↓
+Choose quantity
+      ↓
+Choose modifiers
+      ↓
+Add to cart

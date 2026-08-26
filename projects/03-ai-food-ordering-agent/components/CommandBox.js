@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import VoiceInput from "@/components/VoiceInput";
 import LoadingState from "@/components/LoadingState";
 import ErrorState from "@/components/ErrorState";
@@ -14,8 +14,10 @@ export default function CommandBox() {
   const [statusMessage, setStatusMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const { cart, dispatch } = useCart();
+  const voiceInputRef = useRef(null);
 
   async function handleCommandSubmit(event) {
     event.preventDefault();
@@ -68,6 +70,10 @@ export default function CommandBox() {
     setCommand(transcript);
   }
 
+  function handleCancelListening() {
+    voiceInputRef.current?.stopListening();
+  }
+
   return (
     <section className={styles.commandSection}>
       <div className={styles.header}>
@@ -84,27 +90,54 @@ export default function CommandBox() {
           onChange={(event) => setCommand(event.target.value)}
           placeholder='Try: "Order two paneer burgers from Burger House"'
           className={styles.commandInput}
+          disabled={isListening}
         />
 
         <div className={styles.actions}>
-          <VoiceInput onTranscript={handleTranscript} />
-          <button className={styles.submitButton} type="submit">
-            Order
-          </button>
+          <VoiceInput
+            ref={voiceInputRef}
+            onTranscript={handleTranscript}
+            onStart={() => setIsListening(true)}
+            onEnd={() => setIsListening(false)}
+          />
+
+          {isListening ? (
+            <button
+              type="button"
+              className={styles.cancelButton}
+              onClick={handleCancelListening}
+            >
+              Cancel
+            </button>
+          ) : (
+            <button
+              className={styles.submitButton}
+              type="submit"
+              disabled={isLoading}
+            >
+              Order
+            </button>
+          )}
         </div>
       </form>
 
       <div className={styles.examples}>
-        <button onClick={() => setCommand("Order two paneer burgers from Burger House with extra cheese")}>
+        <button
+          disabled={isListening}
+          onClick={() => setCommand("Order two paneer burgers from Burger House with extra cheese")}
+        >
           Order burgers
         </button>
-        <button onClick={() => setCommand("Add one masala dosa from South Kitchen")}>
+        <button
+          disabled={isListening}
+          onClick={() => setCommand("Add one masala dosa from South Kitchen")}
+        >
           Add dosa
         </button>
-        <button onClick={() => setCommand("Show my cart")}>
+        <button disabled={isListening} onClick={() => setCommand("Show my cart")}>
           Show cart
         </button>
-        <button onClick={() => setCommand("Place the order")}>
+        <button disabled={isListening} onClick={() => setCommand("Place the order")}>
           Place order
         </button>
       </div>
