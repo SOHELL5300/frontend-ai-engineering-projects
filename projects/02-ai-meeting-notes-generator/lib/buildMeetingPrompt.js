@@ -1,49 +1,59 @@
 export function buildMeetingPrompt(meetingText) {
   return `
-You are an AI assistant helping a product team convert raw meeting notes into structured business output.
+You are a meeting assistant.
 
-Analyze the meeting notes carefully and return ONLY valid JSON.
+Analyze the meeting notes below and convert them into structured information.
 
-Do not include markdown.
-Do not include explanation outside JSON.
-Do not include backticks.
+IMPORTANT:
+Return ONLY valid JSON.
+Do not return markdown.
+Do not use code fences.
+Do not add explanations before or after the JSON.
 
-Return this exact JSON structure:
+Use exactly this structure:
 
 {
-  "summary": "Short meeting summary in 3-5 sentences.",
+  "summary": "A concise summary of the meeting.",
   "keyDiscussionPoints": [
-    "Point 1",
-    "Point 2"
+    "Discussion point 1"
   ],
   "decisionsMade": [
-    "Decision 1",
-    "Decision 2"
+    "Decision 1"
   ],
   "actionItems": [
     {
-      "task": "Action item description",
-      "suggestedOwner": "Suggested owner name or role",
-      "priority": "High | Medium | Low"
+      "task": "Task description",
+      "suggestedOwner": "Person name or role",
+      "priority": "High"
     }
   ],
   "risksAndBlockers": [
-    "Risk or blocker 1",
-    "Risk or blocker 2"
+    "Risk or blocker"
   ],
   "followUpQuestions": [
-    "Question 1",
-    "Question 2"
+    "Question that needs clarification"
   ]
 }
 
-Rules:
-- If owner is not clearly mentioned, suggest a likely role such as Product Manager, Frontend Developer, Backend Developer, QA Engineer, Designer, or Project Lead.
-- Priority should be based on urgency, business impact, dependency, or blocker severity.
-- Keep the output practical and useful for real teams.
-- Use simple professional language.
+RULES:
 
-Meeting notes:
+1. summary must contain the most important information.
+2. Extract important topics from the discussion.
+3. Only include decisions that were actually made.
+4. Extract clear action items.
+5. If a specific owner is mentioned, use that person.
+6. If an owner is not mentioned, suggest a reasonable team role.
+7. priority must be exactly one of:
+   High
+   Medium
+   Low
+8. Identify risks and blockers mentioned in the meeting.
+9. Generate useful follow-up questions when clarification is needed.
+10. If a section has no information, return an empty array.
+11. Do not invent specific facts that are not supported by the meeting notes.
+
+MEETING NOTES:
+
 ${meetingText}
 `;
 }
