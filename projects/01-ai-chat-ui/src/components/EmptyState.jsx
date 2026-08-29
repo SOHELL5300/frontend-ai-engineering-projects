@@ -1,7 +1,11 @@
 function EmptyState() {
   return (
     <section className="empty-state">
-      <div className="empty-icon">✦</div>
+      <div className="empty-icon" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
 
       <h2>Start building an AI conversation</h2>
 
