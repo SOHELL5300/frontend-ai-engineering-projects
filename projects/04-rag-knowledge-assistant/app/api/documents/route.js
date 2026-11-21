@@ -1,16 +1,16 @@
 import { createHash, randomUUID } from "node:crypto";
 import { normalizeText, chunkText } from "../../../lib/chunk.mjs";
 import { EMBED_MODEL, embedTexts, OllamaError } from "../../../lib/ollama.mjs";
-import { readIndex, addDocument, removeDocument, publicDocument } from "../../../lib/store.mjs";
+import { listDocuments, saveDocument, deleteDocument } from "../../../lib/repository.mjs";
+import { StorageError } from "../../../lib/postgres.mjs";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const data = await readIndex();
-    return Response.json({ documents: data.documents.map(publicDocument) });
-  } catch {
-    return Response.json({ error: "Could not read the local index." }, { status: 500 });
+    return Response.json({ documents: await listDocuments() });
+  } catch (error) {
+    return Response.json({ error: error instanceof StorageError ? error.message : "Unable to read documents." }, { status: error instanceof StorageError ? error.status : 500 });
   }
 }
 
@@ -42,12 +42,12 @@ export async function POST(request) {
       embedModel: EMBED_MODEL,
       chunks: chunks.map((chunk, i) => ({ ...chunk, embedding: vectors[i] })),
     };
-    const result = await addDocument(document);
+    const result = await saveDocument(document);
     return Response.json(result, { status: result.created ? 201 : 200 });
   } catch (error) {
     return Response.json({
-      error: error instanceof OllamaError ? error.message : "Unable to save the document.",
-    }, { status: error instanceof OllamaError ? 502 : 500 });
+      error: error instanceof OllamaError || error instanceof StorageError ? error.message : "Unable to save the document.",
+    }, { status: error instanceof OllamaError ? error.status : error instanceof StorageError ? error.status : 500 });
   }
 }
 
@@ -55,9 +55,9 @@ export async function DELETE(request) {
   const id = new URL(request.url).searchParams.get("id");
   if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "Invalid document ID." }, { status: 400 });
   try {
-    const removed = await removeDocument(id);
+    const removed = await deleteDocument(id);
     return Response.json({ removed }, { status: removed ? 200 : 404 });
-  } catch {
-    return Response.json({ error: "Unable to remove the document." }, { status: 500 });
+  } catch (error) {
+    return Response.json({ error: error instanceof StorageError ? error.message : "Unable to remove the document." }, { status: error instanceof StorageError ? error.status : 500 });
   }
 }

@@ -1,6 +1,6 @@
 import { EMBED_MODEL, embedTexts, answerWithContext, OllamaError } from "../../../lib/ollama.mjs";
-import { readIndex } from "../../../lib/store.mjs";
-import { rankChunks } from "../../../lib/search.mjs";
+import { countDocuments, retrieveChunks } from "../../../lib/repository.mjs";
+import { StorageError } from "../../../lib/postgres.mjs";
 
 export const runtime = "nodejs";
 
@@ -14,16 +14,15 @@ export async function POST(request) {
     return Response.json({ error: "Question must be between 3 and 500 characters." }, { status: 400 });
   }
   try {
-    const index = await readIndex();
-    if (!index.documents.length) {
+    const count = await countDocuments(EMBED_MODEL);
+    if (!count.total) {
       return Response.json({ error: "Add a document to the knowledge base first." }, { status: 409 });
     }
-    const matching = index.documents.filter((document) => document.embedModel === EMBED_MODEL);
-    if (!matching.length) {
+    if (!count.matching) {
       return Response.json({ error: "The embedding model changed. Re-ingest your documents using the currently configured model." }, { status: 409 });
     }
     const [queryEmbedding] = await embedTexts([question]);
-    const sources = rankChunks(matching, queryEmbedding, { topK: 3, minScore: 0.16 });
+    const sources = await retrieveChunks(queryEmbedding, EMBED_MODEL, { topK: 3, minScore: 0.16 });
     if (!sources.length) {
       return Response.json({
         answer: "I could not find sufficiently relevant information in your uploaded documents.",
@@ -41,8 +40,8 @@ export async function POST(request) {
     });
   } catch (error) {
     return Response.json({
-      error: error instanceof OllamaError ? error.message : "Unable to search the knowledge base.",
-      ...(error instanceof OllamaError ? { code: error.code } : {}),
-    }, { status: error instanceof OllamaError ? error.status : 500 });
+      error: error instanceof OllamaError || error instanceof StorageError ? error.message : "Unable to search the knowledge base.",
+      ...(error instanceof OllamaError || error instanceof StorageError ? { code: error.code } : {}),
+    }, { status: error instanceof OllamaError || error instanceof StorageError ? error.status : 500 });
   }
 }
