@@ -42,6 +42,7 @@ export function publicDocument(document) {
     id: document.id, title: document.title, createdAt: document.createdAt,
     chunkCount: document.chunks.length, characters: document.characters,
     embedModel: document.embedModel,
+    sourceType: document.sourceType || "text", pageCount: document.pageCount ?? null,
   };
 }
 

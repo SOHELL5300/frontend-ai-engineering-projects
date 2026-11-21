@@ -37,7 +37,7 @@ export async function POST(request) {
       return Response.json({ error: "Inconsistent embedding dimensions." }, { status: 502 });
     }
     const document = {
-      id: randomUUID(), title, createdAt: new Date().toISOString(), characters: content.length,
+      id: randomUUID(), title, sourceType: "text", pageCount: null, createdAt: new Date().toISOString(), characters: content.length,
       contentHash: createHash("sha256").update(content).digest("hex"),
       embedModel: EMBED_MODEL,
       chunks: chunks.map((chunk, i) => ({ ...chunk, embedding: vectors[i] })),

@@ -76,7 +76,8 @@ export async function embedTexts(texts) {
 
 export async function answerWithContext(question, sources) {
   const context = sources.map((source, index) =>
-    "SOURCE [" + (index + 1) + "] " + source.title + " (chunk " + (source.chunkIndex + 1) + ")\n" +
+    "SOURCE [" + (index + 1) + "] " + source.title +
+    (source.pageNumber ? " (PDF page " + source.pageNumber + ", chunk " + (source.chunkIndex + 1) + ")\n" : " (chunk " + (source.chunkIndex + 1) + ")\n") +
     "<retrieved_text>\n" + source.text + "\n</retrieved_text>"
   ).join("\n\n");
 
