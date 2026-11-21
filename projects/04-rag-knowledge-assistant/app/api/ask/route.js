@@ -23,7 +23,7 @@ export async function POST(request) {
       return Response.json({ error: "The embedding model changed. Re-ingest your documents using the currently configured model." }, { status: 409 });
     }
     const [queryEmbedding] = await embedTexts([question]);
-    const sources = rankChunks(matching, queryEmbedding, { topK: 4, minScore: 0.16 });
+    const sources = rankChunks(matching, queryEmbedding, { topK: 3, minScore: 0.16 });
     if (!sources.length) {
       return Response.json({
         answer: "I could not find sufficiently relevant information in your uploaded documents.",
@@ -41,6 +41,7 @@ export async function POST(request) {
   } catch (error) {
     return Response.json({
       error: error instanceof OllamaError ? error.message : "Unable to search the knowledge base.",
-    }, { status: error instanceof OllamaError ? 502 : 500 });
+      ...(error instanceof OllamaError ? { code: error.code } : {}),
+    }, { status: error instanceof OllamaError ? error.status : 500 });
   }
 }
