@@ -91,3 +91,24 @@ PDF ingestion, Postgres/pgvector, hybrid search, reranking, streaming with Abort
 ## Validation
 
 Run npm test for pure JavaScript tests. Run npm run build after npm install. Real end-to-end checks require Ollama running and both models available. This project has not been represented as production-deployed.
+
+
+## Fixing chat timeouts on Windows
+
+If indexing succeeds (`POST /api/documents 201`) but asking a question fails after two minutes, the old code had a 120-second timeout for every Ollama operation. The revised Ollama provider now distinguishes **chat model timeouts** (HTTP 504) from an unreachable Ollama server (HTTP 502), logs request timings, and limits generated output size.
+
+Before retrying, open a separate PowerShell terminal:
+
+~~~powershell
+ollama list
+ollama ps
+Measure-Command { ollama run llama3.2 "Define RAG in one sentence." }
+~~~
+
+If direct generation is also slow, inspect RAM/VRAM and the processor column in `ollama ps`. On machines with limited memory, Ollama may run on CPU or repeatedly load models. The embedding model is now unloaded between requests by default so the chat model has more room.
+
+The default chat timeout is now **240 seconds**. You can increase it locally by adding `OLLAMA_CHAT_TIMEOUT_MS=360000` to `.env.local` and restarting Next.js. This merely allows more time; it does not accelerate generation. Chat requests limit the response to 256 tokens and context to 3072 tokens to lower inference work.
+
+The UI still waits for a complete response. Streaming updates and cancellation are planned for a later version. These long server-side timeouts are suitable for localhost, not necessarily hosted serverless deployments.
+
+**Separate warning:** React hydration mismatch involving `cz-shortcut-listen="true"` is typically caused by a browser extension injecting an HTML attribute. Try an extension-free/private browser window; it does not cause the Ollama API timeout.
