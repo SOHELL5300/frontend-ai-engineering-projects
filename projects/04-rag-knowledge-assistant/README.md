@@ -1,6 +1,6 @@
 # 04 — RAG Knowledge Assistant
 
-A **real local-first Retrieval-Augmented Generation app** using Next.js, React, Ollama embeddings, cosine-similarity search, and evidence-backed AI answers.
+A **real Retrieval-Augmented Generation app** using Next.js, React, Ollama embeddings, cosine-similarity search, and evidence-backed AI answers. Choose local JSON or PostgreSQL + pgvector storage.
 
 Part of [Frontend AI Engineering Projects](https://github.com/SOHELL5300/frontend-ai-engineering-projects) and [Frontend AI Engineer Kit](https://frontendaiengineer.com).
 
@@ -24,12 +24,12 @@ Requirements: Node.js 20.9+ (22 recommended), Ollama installed locally, enough m
 7. Run: npm run dev
 8. Open http://localhost:3000
 
-No cloud API key is required. If you change the embedding model, **delete and re-index old documents** to avoid incompatible embedding spaces.
+No cloud API key is required. If you change the embedding model, **re-index documents for the new model** to avoid incompatible embedding spaces. Existing model-specific vectors remain in their original index.
 
 ## Demonstration
 
 1. Select Add document. The interface includes a sample guide; you may also paste text or import a TXT/Markdown file.
-2. Click Index document. Ollama creates real vectors; they are persisted in .data/rag-index.json.
+2. Click Index document. Ollama creates real vectors; they are persisted in .data/rag-index.json by default, or PostgreSQL with RAG_STORAGE=postgres.
 3. Ask a question, for example: What happens during indexing?
 4. Expand Retrieved evidence to examine which chunks were used.
 5. Try a question the documents cannot answer. Compare model output against its evidence.
@@ -107,6 +107,10 @@ Existing PDF/TXT ingestion, Ollama models, and page-aware citations use the same
 
 ### PostgreSQL setup (local)
 
+**Students on Windows:** PostgreSQL with pgvector must already be available before running the migration. An existing managed PostgreSQL instance with pgvector enabled is also suitable. On a laptop with 8 GB RAM, running Ollama and a local database simultaneously may increase memory pressure.
+
+Use a **dedicated lab database** instead of your website's production database. Keep its connection string in `.env.local`, never in Git.
+
 Install PostgreSQL with the **pgvector** extension available to the server. Create an empty database and a user with permission to create tables and enable the extension (or have an administrator enable it first).
 
 Update `.env.local` (do not commit passwords):
@@ -181,7 +185,7 @@ All document writes occur in transactions; duplicate documents are detected thro
 | Chat model | Ollama llama3.2 (default); qwen2.5:1.5b recommended for limited RAM |
 | Embeddings | Ollama embeddinggemma |
 | Search | Exact cosine similarity (top K) |
-| Storage | Local JSON file with atomic rename |
+| Storage | Local JSON file (default), or PostgreSQL + pgvector |
 | Tests | Node built-in test runner |
 
 ## APIs
