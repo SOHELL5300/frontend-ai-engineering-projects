@@ -15,3 +15,8 @@
 .fileicon{font-size:10px;font-weight:800}
 .sources summary{line-height:1.7}
 @media(max-width:500px){.source-modes{grid-template-columns:1fr}.sources summary span{float:none;display:block}}
+
+/* Keep source reference and numeric similarity visually distinct. */
+.sources summary .source-reference{display:inline;float:none;color:#e2ede0;font-weight:600}
+.sources summary .similarity-label{float:none;display:inline-block;margin-left:12px;color:#a6c699;font-weight:500;white-space:nowrap}
+@media(max-width:600px){.sources summary .similarity-label{display:block;margin-left:20px;margin-top:5px}}
