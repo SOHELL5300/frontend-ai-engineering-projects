@@ -35,7 +35,8 @@ export async function POST(request) {
       answer, grounded: true,
       sources: sources.map((source, index) => ({
         citation: index + 1, title: source.title, documentId: source.documentId,
-        chunkIndex: source.chunkIndex, excerpt: source.text, similarity: Number(source.score.toFixed(3)),
+        chunkIndex: source.chunkIndex, pageNumber: source.pageNumber, sourceType: source.sourceType,
+        excerpt: source.text, similarity: Number(source.score.toFixed(3)),
       })),
     });
   } catch (error) {

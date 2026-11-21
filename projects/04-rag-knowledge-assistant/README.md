@@ -45,7 +45,7 @@ ollama pull qwen2.5:1.5b
 ollama run qwen2.5:1.5b "Explain RAG in one sentence."
 ~~~
 
-Keep the existing \`OLLAMA_EMBED_MODEL=embeddinggemma\`, but change your **local** \`.env.local\` to:
+Keep the existing `OLLAMA_EMBED_MODEL=embeddinggemma`, but change your **local** `.env.local` to:
 
 ~~~dotenv
 OLLAMA_BASE_URL=http://127.0.0.1:11434
@@ -55,9 +55,9 @@ OLLAMA_CHAT_TIMEOUT_MS=240000
 OLLAMA_EMBED_KEEP_ALIVE=0
 ~~~
 
-Restart the dev server after changing \`.env.local\`. Changing only the chat model does **not** require re-indexing your documents; changing the embedding model **does**.
+Restart the dev server after changing `.env.local`. Changing only the chat model does **not** require re-indexing your documents; changing the embedding model **does**.
 
-**Observed developer test, not a guarantee:** an 8 GB RAM Windows laptop returned an in-app answer in about 10–20 seconds with \`qwen2.5:1.5b\`, while \`llama3.2\` failed to complete a short direct prompt after more than five minutes. Performance varies with memory pressure, CPU/GPU capabilities, retrieval size, and hardware.
+**Observed developer test, not a guarantee:** an 8 GB RAM Windows laptop returned an in-app answer in about 10–20 seconds with `qwen2.5:1.5b`, while `llama3.2` failed to complete a short direct prompt after more than five minutes. Performance varies with memory pressure, CPU/GPU capabilities, retrieval size, and hardware.
 
 **Accuracy warning:** the smaller model previously answered "RAG" as "Rich Answers Generation" when prompted without context (the correct expansion is "Retrieval-Augmented Generation"). This is why students must verify actual generated answers against retrieved sources. A quick response is not proof of groundedness.
 
@@ -67,12 +67,38 @@ Restart the dev server after changing \`.env.local\`. Changing only the chat mod
 - [ ] Ask a fact contained in the document and inspect the returned source passage
 - [ ] Check that each factual claim is supported by the cited passage, not just accompanied by a citation marker
 - [ ] Ask a fact *absent* from the document and check that the model avoids invention
-- [ ] Run \`npm test\` and \`npm run build\`; do not treat successful API responses as substitutes for tests
-- [ ] Never publish private documents or \`.data/rag-index.json\`
+- [ ] Run `npm test` and `npm run build`; do not treat successful API responses as substitutes for tests
+- [ ] Never publish private documents or `.data/rag-index.json`
+
+## V2 milestone: PDF ingestion (PR #2)
+
+PDF upload is available under **Add document → PDF**. The browser sends a multipart form upload to `POST /api/documents/pdf`; the server validates filename, MIME type, PDF header, byte size, and page count, then extracts selectable text by actual page number using `pdf-parse` v2. Chunks are generated **within page boundaries** so citations show the correct original PDF page.
+
+The original PDF file is **not saved**. Extracted text, page numbers, and embedding vectors remain in the ignored local JSON index. Duplicate PDFs with identical bytes and the same embedding model are reused. Existing indexed TXT/Markdown documents and V1 data remain readable.
+
+### Upload limits and expected errors
+
+- PDF format only, maximum **4 MB**, **30 pages**, **50,000 extracted characters** and **100 chunks**
+- Password-encrypted PDFs are rejected; upload a password-free copy
+- Scanned/image-only PDFs without selectable text are rejected with an explicit OCR-not-supported error
+- No outbound PDF upload to a cloud provider; parsing and Ollama embedding run on your local Node server
+- On an 8 GB RAM machine, index small PDFs (1–5 pages) initially to limit embedding time
+- Untrusted PDFs should be treated as potentially hostile inputs. This local demo is not a hardened public PDF-processing service
+
+### Manual acceptance tests
+
+1. Run `npm install`, `npm test` and `npm run build` from this project directory; Node 22.3+ recommended.
+2. In **Add document**, switch to PDF and upload a small **text-based** PDF. Verify it appears in Your documents with a page count.
+3. Ask about a fact on page 2; inspect the retrieved source row showing **Page 2** and verify the underlying excerpt.
+4. Verify a previously indexed TXT/Markdown document still works.
+5. Attempt to upload an image-only scan and a non-PDF renamed to `.pdf`. Expect actionable rejection.
+6. Do not merge the PR before the PDF upload, existing TXT workflow and real Ollama answer flow pass locally.
+
+See the `pdf-parse` library usage and Next.js worker setup in its official project documentation.
 
 ## Architecture
 
-    Text / TXT / Markdown
+    Text / TXT / Markdown / PDF (page-aware extraction)
              |
     POST /api/documents
              |
@@ -103,6 +129,7 @@ Restart the dev server after changing \`.env.local\`. Changing only the chat mod
 - GET /api/health: Ollama status and installed-model checks
 - GET /api/documents: document metadata
 - POST /api/documents: JSON with title and text (40 to 50,000 characters)
+- POST /api/documents/pdf: multipart/form-data file for PDF indexing (4 MB, 30 pages, 50k extracted characters)
 - DELETE /api/documents?id=UUID: remove indexed document
 - POST /api/ask: JSON with question; returns answer, retrieval status and sources
 
@@ -111,17 +138,17 @@ Restart the dev server after changing \`.env.local\`. Changing only the chat mod
 This is a **single-user localhost teaching demo**, NOT a public production service.
 
 - .data contains source text and embeddings and must remain private. Never commit private documents, secrets or API keys.
-- There is no authentication, tenant isolation, rate limiting, PDF parsing or malware scanning.
+- There is no authentication, tenant isolation, rate limiting, OCR or malware scanning. The PDF parser is for small, trusted local files only.
 - File storage serializes writes only within one Node process; it does not handle multiple replicas or serverless environments.
 - Exact vector comparison is suitable for small demonstrations, not massive indexes.
 - Similarity percentage is NOT calibrated model confidence. A retrieved source does not guarantee a correct answer.
 - Retrieved text is treated as untrusted, but prompt injection and model hallucinations remain possible.
 - The answer endpoint is not yet streaming; loading/error UI states are implemented.
-- The current version supports UTF-8 TXT and Markdown only. PDF parsing and pgvector storage are next upgrades.
+- The current version supports TXT, Markdown, and selectable-text PDFs. Image-only scans require OCR (not supported). pgvector is a future upgrade.
 
 ## Future extensions
 
-PDF ingestion, Postgres/pgvector, hybrid search, reranking, streaming with AbortController, RAG evaluation, observability, authentication and tenancy.
+Postgres/pgvector, OCR, hybrid search, reranking, streaming with AbortController, RAG evaluation, observability, authentication and tenancy.
 
 ## Validation
 

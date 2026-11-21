@@ -23,6 +23,8 @@ export function rankChunks(documents, queryEmbedding, options = {}) {
       documentId: document.id,
       title: document.title,
       chunkIndex: chunk.index,
+      pageNumber: chunk.pageNumber ?? null,
+      sourceType: document.sourceType || "text",
       text: chunk.text,
       score: cosineSimilarity(queryEmbedding, chunk.embedding),
     }))
