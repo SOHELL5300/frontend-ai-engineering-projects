@@ -110,13 +110,18 @@ export async function searchPostgresChunks(vector, model, options = {}) {
     throw new StorageError("Invalid retrieval options.", 400, "SEARCH_OPTIONS");
   }
   const queryVector = vectorLiteral(vector);
+  // MATERIALIZED ensures the model/dimension filter completes before the vector
+  // operator is evaluated. Different embedding models can have different dimensions.
   const sql = [
-    "SELECT d.id AS document_id,d.title,d.source_type,c.chunk_index,c.page_number,c.content,",
-    "1-(c.embedding <=> $1::vector) AS similarity",
+    "WITH matching AS MATERIALIZED (",
+    "SELECT d.id AS document_id,d.title,d.source_type,c.chunk_index,c.page_number,c.content,c.embedding",
     "FROM rag_chunks c JOIN rag_documents d ON d.id=c.document_id",
     "WHERE d.embed_model=$2 AND c.embedding_dims=$3",
-    "AND 1-(c.embedding <=> $1::vector)>=$4",
-    "ORDER BY c.embedding <=> $1::vector ASC LIMIT $5",
+    ")",
+    "SELECT document_id,title,source_type,chunk_index,page_number,content,",
+    "1-(embedding <=> $1::vector) AS similarity FROM matching",
+    "WHERE 1-(embedding <=> $1::vector)>=$4",
+    "ORDER BY embedding <=> $1::vector ASC LIMIT $5",
   ].join(" ");
   try {
     const result = await connectionPool().query(sql,[queryVector,model,vector.length,minScore,topK]);
