@@ -35,6 +35,41 @@ No cloud API key is required. If you change the embedding model, **delete and re
 5. Try a question the documents cannot answer. Compare model output against its evidence.
 6. Run npm test to exercise chunking and retrieval logic.
 
+
+## Low-resource setup (8 GB RAM)
+
+If the default Llama 3.2 model takes minutes to answer a short prompt on your computer, prefer a smaller chat model rather than only increasing the HTTP timeout:
+
+~~~powershell
+ollama pull qwen2.5:1.5b
+ollama run qwen2.5:1.5b "Explain RAG in one sentence."
+~~~
+
+Keep the existing \`OLLAMA_EMBED_MODEL=embeddinggemma\`, but change your **local** \`.env.local\` to:
+
+~~~dotenv
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_CHAT_MODEL=qwen2.5:1.5b
+OLLAMA_EMBED_MODEL=embeddinggemma
+OLLAMA_CHAT_TIMEOUT_MS=240000
+OLLAMA_EMBED_KEEP_ALIVE=0
+~~~
+
+Restart the dev server after changing \`.env.local\`. Changing only the chat model does **not** require re-indexing your documents; changing the embedding model **does**.
+
+**Observed developer test, not a guarantee:** an 8 GB RAM Windows laptop returned an in-app answer in about 10–20 seconds with \`qwen2.5:1.5b\`, while \`llama3.2\` failed to complete a short direct prompt after more than five minutes. Performance varies with memory pressure, CPU/GPU capabilities, retrieval size, and hardware.
+
+**Accuracy warning:** the smaller model previously answered "RAG" as "Rich Answers Generation" when prompted without context (the correct expansion is "Retrieval-Augmented Generation"). This is why students must verify actual generated answers against retrieved sources. A quick response is not proof of groundedness.
+
+### RAG acceptance checklist
+
+- [ ] Index a TXT/Markdown document and see nonzero chunks in the UI
+- [ ] Ask a fact contained in the document and inspect the returned source passage
+- [ ] Check that each factual claim is supported by the cited passage, not just accompanied by a citation marker
+- [ ] Ask a fact *absent* from the document and check that the model avoids invention
+- [ ] Run \`npm test\` and \`npm run build\`; do not treat successful API responses as substitutes for tests
+- [ ] Never publish private documents or \`.data/rag-index.json\`
+
 ## Architecture
 
     Text / TXT / Markdown
@@ -47,7 +82,7 @@ No cloud API key is required. If you change the embedding model, **delete and re
              |
     POST /api/ask
              |
-    Embed question, cosine similarity, top 4
+    Embed question, cosine similarity, top 3
              |
     Ollama /api/chat with retrieved passages
              |
@@ -57,7 +92,7 @@ No cloud API key is required. If you change the embedding model, **delete and re
 | --- | --- |
 | UI | React + Next.js App Router |
 | API | Next.js Node runtime route handlers |
-| Chat model | Ollama llama3.2 |
+| Chat model | Ollama llama3.2 (default); qwen2.5:1.5b recommended for limited RAM |
 | Embeddings | Ollama embeddinggemma |
 | Search | Exact cosine similarity (top K) |
 | Storage | Local JSON file with atomic rename |
