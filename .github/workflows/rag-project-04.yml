@@ -1,4 +1,4 @@
-name: Project 04 — RAG PDF checks
+name: Project 04 RAG and pgvector checks
 
 on:
   pull_request:
@@ -13,8 +13,22 @@ on:
 
 jobs:
   test-and-build:
-    name: Unit tests and Next.js build
+    name: Unit tests, PostgreSQL integration and build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: ragtest
+          POSTGRES_PASSWORD: test_only_password
+          POSTGRES_DB: ragtest
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ragtest -d ragtest"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
     defaults:
       run:
         working-directory: projects/04-rag-knowledge-assistant
@@ -25,9 +39,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install project dependencies
+      - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Run tests
+      - name: Run unit tests
         run: npm test
+      - name: Create pgvector schema
+        env:
+          DATABASE_URL: postgresql://ragtest:test_only_password@localhost:5432/ragtest
+        run: node db/migrate.mjs
+      - name: Run PostgreSQL integration tests
+        env:
+          DATABASE_URL: postgresql://ragtest:test_only_password@localhost:5432/ragtest
+          RAG_PG_INTEGRATION: "true"
+        run: node --test tests/postgres.integration.test.mjs
       - name: Build application
         run: npm run build
