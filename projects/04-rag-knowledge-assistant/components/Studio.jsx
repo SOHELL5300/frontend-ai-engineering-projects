@@ -149,6 +149,7 @@ export default function Studio() {
       <p>Index PDFs, text and Markdown. Generate embeddings, retrieve relevant passages and inspect page-aware citations with local Ollama models.</p>
       <div className="status">
         <strong>{ready ? "● Ollama connected" : health?.online ? "● Pull required models" : "● Ollama disconnected"}</strong>
+        <span className="storage-indicator" aria-label="Active storage backend">{health?.storageMode === "postgres" ? "▦ PostgreSQL + pgvector" : "▤ Local JSON"}</span>
         <button type="button" onClick={refresh}>↻ Refresh status</button>
       </div>
       {!ready && <p className="hint">Run Ollama locally and pull your configured chat model and embeddinggemma. See the README for low-memory setup.</p>}
