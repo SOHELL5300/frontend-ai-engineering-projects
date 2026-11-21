@@ -96,6 +96,66 @@ The original PDF file is **not saved**. Extracted text, page numbers, and embedd
 
 See the `pdf-parse` library usage and Next.js worker setup in its official project documentation.
 
+## V3 milestone: PostgreSQL + pgvector
+
+This PR adds an **optional database-backed vector index**. The RAG application works in both modes:
+
+- `RAG_STORAGE=file` (default): local JSON index, zero database setup, retained for students
+- `RAG_STORAGE=postgres`: PostgreSQL documents and pgvector embeddings with exact SQL cosine search
+
+Existing PDF/TXT ingestion, Ollama models, and page-aware citations use the same React workflow. Database records are isolated from file storage: switching the mode will show a different set of documents. There is **no automatic migration of existing JSON documents**.
+
+### PostgreSQL setup (local)
+
+Install PostgreSQL with the **pgvector** extension available to the server. Create an empty database and a user with permission to create tables and enable the extension (or have an administrator enable it first).
+
+Update `.env.local` (do not commit passwords):
+
+~~~dotenv
+RAG_STORAGE=postgres
+DATABASE_URL=postgresql://YOUR_USER:YOUR_PASSWORD@localhost:5432/rag_lab
+OLLAMA_CHAT_MODEL=qwen2.5:1.5b
+OLLAMA_EMBED_MODEL=embeddinggemma
+~~~
+
+Run:
+
+~~~powershell
+npm install
+npm run db:migrate
+npm test
+npm run build
+npm run dev
+~~~
+
+The migration is repeatable and creates `rag_documents`, `rag_chunks`, the `vector` extension, foreign keys and metadata indexes. The app does **not** run migrations during requests.
+
+### How retrieval works
+
+`POST /api/ask` first embeds the question using Ollama. In PostgreSQL mode, it filters by the embedding-model name and vector dimension, then ranks source chunks using `<=>` (pgvector cosine distance). A parameterized query returns the top three matching chunks, with page metadata and similarity scores. In file mode, the previous in-memory cosine ranking remains unchanged.
+
+All document writes occur in transactions; duplicate documents are detected through a unique index on content hash and embedding model. Deleting a document cascades to its chunks.
+
+### Important limitations
+
+- This is **exact search**, not HNSW/IVFFlat approximate nearest-neighbor indexing. The vector column does not enforce a fixed dimension, allowing models with different vector sizes. Dedicated indexes and per-model dimensions are later performance upgrades.
+- There is no multi-tenant access control or public deployment authentication. Do **not** expose the API publicly without securing it.
+- A pgvector-compatible PostgreSQL environment and credentials are required for database mode.
+- This milestone has unit tests and CI. A **real Postgres/pgvector integration test** must still be run before claiming a verified database workflow.
+- For localhost, start with small PDFs. Real embedding speed depends on hardware.
+- Do not commit database URLs, passwords, `.env.local`, index files or sensitive document contents.
+
+### Suggested acceptance tests
+
+1. In default file mode, check your existing indexed PDF and its page-2 citation are still present.
+2. Switch to PostgreSQL mode, run the migration and restart the server.
+3. Upload a small TXT/PDF and verify document listing.
+4. Ask for its page-specific code and confirm evidence references the correct PDF page.
+5. Delete the document and verify its chunks disappear.
+6. Re-upload the same file and confirm duplicate behavior.
+7. Switch back to file mode and verify your original local documents reappear.
+
+
 ## Architecture
 
     Text / TXT / Markdown / PDF (page-aware extraction)

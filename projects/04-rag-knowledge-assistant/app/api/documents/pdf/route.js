@@ -2,7 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { MAX_PDF_BYTES, PdfIngestionError, extractPdfPages, validatePdfFile } from "../../../../lib/pdf.mjs";
 import { preparePdfChunks } from "../../../../lib/pdf-ingest.mjs";
 import { EMBED_MODEL, embedTexts, OllamaError } from "../../../../lib/ollama.mjs";
-import { addDocument } from "../../../../lib/store.mjs";
+import { saveDocument } from "../../../../lib/repository.mjs";
+import { StorageError } from "../../../../lib/postgres.mjs";
 
 export const runtime = "nodejs";
 
@@ -36,13 +37,13 @@ export async function POST(request) {
       contentHash, embedModel: EMBED_MODEL,
       chunks: prepared.chunks.map((chunk, i) => ({ ...chunk, embedding: vectors[i] })),
     };
-    const result = await addDocument(document);
+    const result = await saveDocument(document);
     return Response.json(result, { status: result.created ? 201 : 200 });
   } catch (error) {
     if (error instanceof PdfIngestionError) {
       return Response.json({ error: error.message, code: error.code }, { status: error.status });
     }
-    if (error instanceof OllamaError) {
+    if (error instanceof OllamaError || error instanceof StorageError) {
       return Response.json({ error: error.message, code: error.code }, { status: error.status });
     }
     console.error("[RAG] Failed to ingest PDF", error);
