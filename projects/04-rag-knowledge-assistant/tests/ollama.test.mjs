@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CHAT_TIMEOUT_MS, answerWithContext, embedTexts, OllamaError } from "../lib/ollama.mjs";
+import { CHAT_TIMEOUT_MS, answerWithContext, embedTexts, chatGenerationOptions, OllamaError } from "../lib/ollama.mjs";
 
 test("chat request uses bounded generation options and returns an answer", async () => {
   const original = globalThis.fetch;
@@ -47,5 +47,42 @@ test("embedding requests can unload model after inference", async () => {
     assert.deepEqual(await embedTexts(["hello"]), [[1, 2]]);
   } finally {
     globalThis.fetch = original;
+  }
+});
+
+test("low-memory chat limits can be configured without changing the model", async () => {
+  const previousPredict = process.env.OLLAMA_CHAT_NUM_PREDICT;
+  const previousCtx = process.env.OLLAMA_CHAT_NUM_CTX;
+  const originalFetch = globalThis.fetch;
+  let options;
+  try {
+    process.env.OLLAMA_CHAT_NUM_PREDICT = "128";
+    process.env.OLLAMA_CHAT_NUM_CTX = "2048";
+    globalThis.fetch = async (_url, request) => {
+      options = JSON.parse(request.body).options;
+      return { ok: true, json: async () => ({
+        message: { content: "Correct source-backed answer [1]." },
+        load_duration: 1200000000,
+        prompt_eval_duration: 400000000,
+        eval_duration: 1400000000,
+        prompt_eval_count: 73,
+        eval_count: 11,
+      }) };
+    };
+    const answer = await answerWithContext("Question?", [{ title: "Example", chunkIndex: 0, text: "Source evidence." }]);
+    assert.equal(answer, "Correct source-backed answer [1].");
+    assert.equal(options.num_predict, 128);
+    assert.equal(options.num_ctx, 2048);
+    assert.equal(chatGenerationOptions().temperature, 0);
+    process.env.OLLAMA_CHAT_NUM_PREDICT = "invalid";
+    process.env.OLLAMA_CHAT_NUM_CTX = "90000";
+    assert.equal(chatGenerationOptions().num_predict, 256);
+    assert.equal(chatGenerationOptions().num_ctx, 3072);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (previousPredict === undefined) delete process.env.OLLAMA_CHAT_NUM_PREDICT;
+    else process.env.OLLAMA_CHAT_NUM_PREDICT = previousPredict;
+    if (previousCtx === undefined) delete process.env.OLLAMA_CHAT_NUM_CTX;
+    else process.env.OLLAMA_CHAT_NUM_CTX = previousCtx;
   }
 });

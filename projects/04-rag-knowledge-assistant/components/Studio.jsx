@@ -250,7 +250,7 @@ export default function Studio() {
                 <h3>Retrieved evidence</h3>
                 {result.sources.map((source) => <details key={source.documentId + "-" + source.chunkIndex}>
                   <summary>
-                    <span className="source-reference">[{source.citation}] {source.title}{source.pageNumber ? " · Page " + source.pageNumber : ""}{" · Chunk " + (source.chunkIndex + 1)}</span>
+                    <span className="source-reference">[{source.citation}] {source.title}{source.pageNumber ? " · Page " + source.pageNumber : ""}{" · Chunk " + (source.chunkIndex + 1)}</span>{" · "}
                     <span className="similarity-label">Similarity: {Math.round(source.similarity * 100)}%</span>
                   </summary>
                   <p>{source.excerpt}</p>

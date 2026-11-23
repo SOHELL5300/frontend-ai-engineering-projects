@@ -11,6 +11,19 @@ function timeoutMs(value, fallback) {
 export const CHAT_TIMEOUT_MS = timeoutMs(process.env.OLLAMA_CHAT_TIMEOUT_MS, 240000);
 export const EMBED_TIMEOUT_MS = timeoutMs(process.env.OLLAMA_EMBED_TIMEOUT_MS, 120000);
 
+// Only explicitly permitted generation limits are accepted. Defaults preserve V3 behavior.
+function generationLimit(value, fallback, minimum, maximum) {
+  const n = Number(value);
+  return value !== undefined && Number.isSafeInteger(n) && n >= minimum && n <= maximum ? n : fallback;
+}
+export function chatGenerationOptions() {
+  return {
+    temperature: 0,
+    num_predict: generationLimit(process.env.OLLAMA_CHAT_NUM_PREDICT, 256, 16, 1024),
+    num_ctx: generationLimit(process.env.OLLAMA_CHAT_NUM_CTX, 3072, 512, 8192),
+  };
+}
+
 export class OllamaError extends Error {
   constructor(message, status = 502, code = "OLLAMA_ERROR") {
     super(message);
@@ -35,7 +48,22 @@ async function ollamaRequest(path, payload, timeout) {
       throw new OllamaError("Ollama HTTP " + response.status + ": " + detail.slice(0, 180));
     }
     const data = await response.json();
-    console.info("[RAG] Ollama " + path + " completed in " + Math.round((Date.now() - start) / 1000) + "s");
+    const wallMs = Date.now() - start;
+    if (path === "/api/chat") {
+      // Ollama reports durations in nanoseconds. Do not log prompt or document text.
+      const durationMs = (value) => Number.isFinite(value) ? Math.round(value / 1e6) : null;
+      console.info("[RAG] Ollama chat metrics", {
+        wallMs,
+        loadMs: durationMs(data.load_duration),
+        promptEvalMs: durationMs(data.prompt_eval_duration),
+        generationMs: durationMs(data.eval_duration),
+        promptTokens: data.prompt_eval_count ?? null,
+        generatedTokens: data.eval_count ?? null,
+        doneReason: data.done_reason ?? null,
+      });
+    } else {
+      console.info("[RAG] Ollama " + path + " completed in " + wallMs + "ms");
+    }
     return data;
   } catch (error) {
     if (error instanceof OllamaError) throw error;
@@ -81,10 +109,15 @@ export async function answerWithContext(question, sources) {
     "<retrieved_text>\n" + source.text + "\n</retrieved_text>"
   ).join("\n\n");
 
+  const options = chatGenerationOptions();
+  console.info("[RAG] Chat request metadata", {
+    sources: sources.length, contextChars: context.length,
+    numPredict: options.num_predict, numCtx: options.num_ctx,
+  });
   const data = await ollamaRequest("/api/chat", {
     model: CHAT_MODEL,
     stream: false,
-    options: { temperature: 0, num_predict: 256, num_ctx: 3072 },
+    options,
     messages: [
       {
         role: "system",
