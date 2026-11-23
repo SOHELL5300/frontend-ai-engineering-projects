@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const SAMPLE = "Retrieval augmented generation, or RAG, connects a language model to outside documents. During indexing, the app splits a document into overlapping chunks, makes embedding vectors, and stores them. During retrieval, the app embeds the question and compares it with indexed chunks using cosine similarity. The best chunks are included in the chat model prompt to produce a source-grounded answer. Students should inspect the citations because a generated answer can still be incorrect. A similarity score is not a calibrated confidence score. Production applications also require authentication, tenant isolation, monitoring, evaluation, and durable vector storage.";
 const MAX_PDF_BYTES = 4 * 1024 * 1024;
@@ -25,6 +25,10 @@ export default function Studio() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState("");
+  const controllerRef = useRef(null);
+  const [lastQuestion, setLastQuestion] = useState("");
+  const [answerStatus, setAnswerStatus] = useState("idle");
+  useEffect(() => () => controllerRef.current?.abort(), []);
 
   const refresh = useCallback(async () => {
     try {
@@ -70,23 +74,99 @@ export default function Studio() {
     }
   }
 
-  async function ask(event) {
-    event.preventDefault();
+  async function readAnswer(prompt) {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setLastQuestion(prompt);
     setError("");
     setNotice("");
-    setResult(null);
+    setResult({ answer: "", sources: [], grounded: false });
     setLoading("ask");
+    setAnswerStatus("retrieving");
     try {
-      setResult(await api("/api/ask", {
+      const response = await fetch("/api/ask/stream", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question }),
-      }));
+        body: JSON.stringify({ question: prompt }),
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || "Could not start streaming.");
+      }
+      if (!response.body) throw new Error("Your browser does not support streaming responses.");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let completed = false;
+      function processLine(line) {
+        if (!line.trim()) return;
+        const event = JSON.parse(line);
+        if (event.type === "error") throw new Error(event.message || "Generation failed.");
+        if (event.type === "sources") {
+          setResult((old) => ({ ...old, sources: event.sources || [] }));
+          setAnswerStatus("generating");
+        }
+        if (event.type === "token") {
+          setResult((old) => ({ ...old, answer: (old?.answer || "") + event.text }));
+          setAnswerStatus("generating");
+        }
+        if (event.type === "done") {
+          completed = true;
+          setResult((old) => ({ ...old, grounded: !!event.grounded }));
+          setAnswerStatus("complete");
+        }
+      }
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let position;
+        while ((position = buffer.indexOf("\n")) !== -1) {
+          processLine(buffer.slice(0, position));
+          buffer = buffer.slice(position + 1);
+        }
+        if (buffer.length > 65536) throw new Error("The response stream was too large.");
+      }
+      buffer += decoder.decode();
+      if (buffer.trim()) processLine(buffer);
+      if (!completed) throw new Error("The answer stream ended unexpectedly.");
     } catch (reason) {
-      setError(reason.message);
+      // Ignore completion/errors from an older request after Retry starts.
+      if (controllerRef.current === controller) {
+        if (controller.signal.aborted) {
+          setAnswerStatus("stopped");
+        } else {
+          setError(reason.message);
+          setAnswerStatus("error");
+        }
+      }
     } finally {
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+        setLoading("");
+      }
+    }
+  }
+
+  function ask(event) {
+    event.preventDefault();
+    const prompt = question.trim();
+    if (prompt.length >= 3 && !loading) void readAnswer(prompt);
+  }
+
+  function stopAnswer() {
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      setAnswerStatus("stopped");
       setLoading("");
     }
+  }
+
+  function retryAnswer() {
+    if (lastQuestion && !loading) void readAnswer(lastQuestion);
   }
 
   async function remove(id) {
@@ -243,9 +323,17 @@ export default function Studio() {
                 <button className="primary" disabled={!ready || !!loading || !docs.length || question.trim().length < 3}>{loading === "ask" ? "Searching…" : "Ask knowledge base →"}</button>
               </div>
             </form>
-            {result ? <div className="answer">
-              <div className="answerheader">✦ GENERATED ANSWER <span>{result.sources.length} source passages</span></div>
-              <article>{result.answer}</article>
+            {result ? <div className="answer" aria-live="polite">
+              <div className="answerheader">
+                <span>✦ AI ANSWER</span>
+                <span>{answerStatus === "retrieving" ? "Retrieving sources…" : answerStatus === "generating" ? "Generating…" : answerStatus === "stopped" ? "Stopped" : answerStatus === "error" ? "Interrupted" : "Complete"} · {result.sources.length} source passages</span>
+              </div>
+              <article>{result.answer || (answerStatus === "retrieving" ? "Searching your knowledge base…" : "Preparing your answer…")}</article>
+              <div className="stream-actions">
+                {loading === "ask" ? <button type="button" className="stop-stream" onClick={stopAnswer}>■ Stop generation</button> : null}
+                {!loading && lastQuestion ? <button type="button" className="retry-stream" onClick={retryAnswer}>↻ Retry question</button> : null}
+                <span>Source citations appear as passages are retrieved.</span>
+              </div>
               {!!result.sources.length && <div className="sources">
                 <h3>Retrieved evidence</h3>
                 {result.sources.map((source) => <details key={source.documentId + "-" + source.chunkIndex}>

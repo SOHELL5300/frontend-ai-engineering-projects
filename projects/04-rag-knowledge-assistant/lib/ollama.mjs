@@ -102,21 +102,21 @@ export async function embedTexts(texts) {
   return result;
 }
 
-export async function answerWithContext(question, sources) {
+export function chatPayload(question, sources, streaming = false) {
   const context = sources.map((source, index) =>
     "SOURCE [" + (index + 1) + "] " + source.title +
     (source.pageNumber ? " (PDF page " + source.pageNumber + ", chunk " + (source.chunkIndex + 1) + ")\n" : " (chunk " + (source.chunkIndex + 1) + ")\n") +
     "<retrieved_text>\n" + source.text + "\n</retrieved_text>"
   ).join("\n\n");
-
   const options = chatGenerationOptions();
   console.info("[RAG] Chat request metadata", {
     sources: sources.length, contextChars: context.length,
     numPredict: options.num_predict, numCtx: options.num_ctx,
+    streaming,
   });
-  const data = await ollamaRequest("/api/chat", {
+  return {
     model: CHAT_MODEL,
-    stream: false,
+    stream: streaming,
     options,
     messages: [
       {
@@ -132,10 +132,68 @@ export async function answerWithContext(question, sources) {
         content: "Question:\n" + question + "\n\nRetrieved references:\n" + context,
       },
     ],
-  }, CHAT_TIMEOUT_MS);
+  };
+}
+
+export async function answerWithContext(question, sources) {
+  const data = await ollamaRequest("/api/chat", chatPayload(question, sources), CHAT_TIMEOUT_MS);
   const answer = data?.message?.content;
   if (typeof answer !== "string" || !answer.trim()) throw new OllamaError("Ollama did not return an answer.");
   return answer.trim();
+}
+
+export async function* streamAnswerWithContext(question, sources, { signal } = {}) {
+  const started = Date.now();
+  const timeoutSignal = AbortSignal.timeout(CHAT_TIMEOUT_MS);
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+  let response;
+  try {
+    response = await fetch(BASE_URL + "/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(chatPayload(question, sources, true)),
+      signal: combinedSignal,
+      cache: "no-store",
+    });
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    if (timeoutSignal.aborted) throw new OllamaError("Ollama chat timed out.", 504, "OLLAMA_TIMEOUT");
+    throw new OllamaError("Cannot connect to Ollama.", 502, "OLLAMA_CONNECTION");
+  }
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new OllamaError("Ollama HTTP " + response.status + ": " + detail.slice(0, 180));
+  }
+  if (!response.body) throw new OllamaError("Ollama did not provide a response body.");
+  const { readNdjson } = await import("./stream.mjs");
+  let done = false;
+  try {
+    for await (const packet of readNdjson(response.body, { signal: combinedSignal })) {
+      if (packet.error) throw new OllamaError(String(packet.error).slice(0, 180));
+      if (packet.message?.content) yield { type: "token", text: packet.message.content };
+      if (packet.done === true) {
+        done = true;
+        console.info("[RAG] Ollama streamed chat metrics", {
+          wallMs: Date.now() - started,
+          loadMs: Number.isFinite(packet.load_duration) ? Math.round(packet.load_duration / 1e6) : null,
+          promptEvalMs: Number.isFinite(packet.prompt_eval_duration) ? Math.round(packet.prompt_eval_duration / 1e6) : null,
+          generationMs: Number.isFinite(packet.eval_duration) ? Math.round(packet.eval_duration / 1e6) : null,
+          promptTokens: packet.prompt_eval_count ?? null,
+          generatedTokens: packet.eval_count ?? null,
+        });
+        yield { type: "done" };
+        break;
+      }
+    }
+    if (!done && !combinedSignal.aborted) {
+      throw new OllamaError("Ollama stream ended without a completion marker.", 502, "OLLAMA_INCOMPLETE");
+    }
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    if (timeoutSignal.aborted) throw new OllamaError("Ollama chat timed out.", 504, "OLLAMA_TIMEOUT");
+    if (error instanceof OllamaError) throw error;
+    throw new OllamaError("Unable to read streamed Ollama response.", 502, "OLLAMA_STREAM");
+  }
 }
 
 export async function checkOllama() {

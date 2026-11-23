@@ -255,3 +255,36 @@ These settings bound the output length and context window, but they are not a gu
 The Next.js terminal now logs **chat request metadata** (number of sources, context length and configured limits) and **Ollama timing metrics** (wall time, model load time, prompt evaluation time, generation time and token counts). The app deliberately does **not** log uploaded document contents, prompts, database URLs or credentials.
 
 If the problem only occurs in the full app, compare the terminal's chat logs with an Ollama request containing the same approximate context length. Later streaming support will provide partial responses and cancellation instead of waiting for the full reply.
+
+## V4 milestone: streamed answers, Stop and Retry
+
+This milestone introduces **POST /api/ask/stream**, a streaming NDJSON endpoint. It uses the same embeddings, PostgreSQL/file retrieval, Ollama model and citation prompt as the existing non-streaming API. The old **POST /api/ask** endpoint remains available for backwards compatibility.
+
+Request: JSON `{"question":"..."}` (3–500 characters). Response: `application/x-ndjson` lines:
+
+~~~json
+{"type":"sources","sources":[{"citation":1,"title":"Sample","pageNumber":2,"excerpt":"...", "similarity":0.5}]}
+{"type":"token","text":"The acceptance"}
+{"type":"token","text":" code is ... [1]"}
+{"type":"done","grounded":true}
+~~~
+
+If a backend failure happens after streaming begins, the server sends `{"type":"error","message":"...","code":"..."}` instead. A client abort ends the upstream Ollama request and retains already-received text in the UI. **Stop** cancels the active request; **Retry** resends the last submitted question. Empty retrievals return the same not-found response without invoking the chat model.
+
+The server processes Ollama's NDJSON incrementally and forwards token text to the browser. The UI differentiates retrieving, generating, stopped, completed and interrupted states. Retrieved evidence and original PDF page numbers stay visible.
+
+### Verification on an 8 GB Windows laptop
+
+1. Keep your existing `.env.local` values for `qwen2.5:1.5b`, `embeddinggemma`, and `RAG_STORAGE=postgres`.
+2. Start PostgreSQL in Docker if needed, then run `npm install`, `npm test`, `npm run build`, and `npm run dev`.
+3. Ask for the page-2 acceptance code. Confirm the answer **appears incrementally**, and source [1] cites **Page 2**.
+4. Ask a longer question and select **Stop generation**. The answer should stop updating, retain any partial response, and show **Stopped**.
+5. Select **Retry question**. Verify a fresh answer starts, and the old answer is replaced rather than appended.
+6. Ask about a fact not contained in the PDF and confirm the model avoids inventing information.
+7. Check the Next.js console for Ollama streamed timing metrics; never paste sensitive document content or database credentials into logs.
+
+### Boundaries
+
+- Streaming improves the perception of responsiveness but **does not guarantee faster model inference** or higher quality.
+- On Stop, ongoing database/embedding work may already have been started and may complete before the cancellation is observed. The upstream Ollama streaming request is abortable.
+- This is still a single-user educational prototype, not a secured public multi-tenant API.
