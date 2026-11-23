@@ -238,3 +238,20 @@ The default chat timeout is now **240 seconds**. You can increase it locally by 
 The UI still waits for a complete response. Streaming updates and cancellation are planned for a later version. These long server-side timeouts are suitable for localhost, not necessarily hosted serverless deployments.
 
 **Separate warning:** React hydration mismatch involving `cz-shortcut-listen="true"` is typically caused by a browser extension injecting an HTML attribute. Try an extension-free/private browser window; it does not cause the Ollama API timeout.
+
+## Troubleshooting slow RAG chat on 8 GB laptops
+
+A short, already-loaded Ollama chat test is not equivalent to the full RAG path: the app embeds the question, retrieves up to three source chunks, and then asks the chat model to process those chunks. If the browser reports a chat timeout, first confirm that a simple `/api/chat` request succeeds.
+
+For short answers, you can **optionally** add these lines to your private `.env.local` and restart Next.js:
+
+~~~dotenv
+OLLAMA_CHAT_NUM_PREDICT=128
+OLLAMA_CHAT_NUM_CTX=2048
+~~~
+
+These settings bound the output length and context window, but they are not a guaranteed timeout fix. Keep the higher defaults for documents requiring longer context. Do not raise the 240-second timeout just to mask a slow request.
+
+The Next.js terminal now logs **chat request metadata** (number of sources, context length and configured limits) and **Ollama timing metrics** (wall time, model load time, prompt evaluation time, generation time and token counts). The app deliberately does **not** log uploaded document contents, prompts, database URLs or credentials.
+
+If the problem only occurs in the full app, compare the terminal's chat logs with an Ollama request containing the same approximate context length. Later streaming support will provide partial responses and cancellation instead of waiting for the full reply.
