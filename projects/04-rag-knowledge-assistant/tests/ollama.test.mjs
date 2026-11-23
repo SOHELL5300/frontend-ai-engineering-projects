@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CHAT_TIMEOUT_MS, answerWithContext, embedTexts, chatGenerationOptions, OllamaError } from "../lib/ollama.mjs";
+import { CHAT_TIMEOUT_MS, answerWithContext, embedTexts, chatGenerationOptions, streamAnswerWithContext, OllamaError } from "../lib/ollama.mjs";
 
 test("chat request uses bounded generation options and returns an answer", async () => {
   const original = globalThis.fetch;
@@ -84,5 +84,61 @@ test("low-memory chat limits can be configured without changing the model", asyn
     else process.env.OLLAMA_CHAT_NUM_PREDICT = previousPredict;
     if (previousCtx === undefined) delete process.env.OLLAMA_CHAT_NUM_CTX;
     else process.env.OLLAMA_CHAT_NUM_CTX = previousCtx;
+  }
+});
+
+test("Ollama NDJSON streaming yields incremental tokens and a completion event", async () => {
+  const previousFetch = globalThis.fetch;
+  let payload;
+  try {
+    globalThis.fetch = async (_url, init) => {
+      payload = JSON.parse(init.body);
+      const encoder = new TextEncoder();
+      return {
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode('{"message":{"content":"The code "},"done":false}\\n'.replace('\\n', '\n')));
+            controller.enqueue(encoder.encode('{"message":{"content":"is 731 [1]."},"done":false}\\n'.replace('\\n', '\n')));
+            controller.enqueue(encoder.encode('{"done":true,"eval_count":8}\\n'.replace('\\n', '\n')));
+            controller.close();
+          },
+        }),
+      };
+    };
+    const packets = [];
+    for await (const token of streamAnswerWithContext("What is the code?", [
+      { title: "PDF", pageNumber: 2, chunkIndex: 1, text: "The code is 731." },
+    ])) packets.push(token);
+    assert.equal(payload.stream, true);
+    assert.deepEqual(packets, [
+      { type: "token", text: "The code " },
+      { type: "token", text: "is 731 [1]." },
+      { type: "done" },
+    ]);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("incomplete Ollama stream produces a distinct error", async () => {
+  const previousFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => ({
+      ok: true,
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"message":{"content":"Partial"},"done":false}\\n'.replace('\\n', '\n')));
+          controller.close();
+        },
+      }),
+    });
+    await assert.rejects(async () => {
+      for await (const packet of streamAnswerWithContext("Question?", [
+        { title: "Guide", chunkIndex: 0, text: "Partial answer." },
+      ])) void packet;
+    }, error => error instanceof OllamaError && error.code === "OLLAMA_INCOMPLETE");
+  } finally {
+    globalThis.fetch = previousFetch;
   }
 });

@@ -24,3 +24,11 @@
 /* Database mode visibility: users must know which index they are querying. */
 .status{flex-wrap:wrap}
 .storage-indicator{font-size:12px;color:#c5d4e0;background:#223139;border:1px solid #3f5562;padding:9px 12px;border-radius:20px}
+
+/* Project 04 V4: streaming answer actions */
+.stream-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:0 20px 16px}
+.stream-actions button{font-size:12px;font-weight:750;border-radius:7px;padding:10px 13px}
+.stop-stream{background:#362627;color:#ffc9c3;border:1px solid #80504e}
+.retry-stream{background:#263d2d;color:#c7f97c;border:1px solid #4b7050}
+.stream-actions>span{color:#99b09e;font-size:11px}
+.answer article{min-height:60px;overflow-wrap:anywhere}
