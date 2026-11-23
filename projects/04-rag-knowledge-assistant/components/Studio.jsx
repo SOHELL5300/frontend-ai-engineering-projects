@@ -134,11 +134,14 @@ export default function Studio() {
       if (buffer.trim()) processLine(buffer);
       if (!completed) throw new Error("The answer stream ended unexpectedly.");
     } catch (reason) {
-      if (controller.signal.aborted) {
-        setAnswerStatus("stopped");
-      } else {
-        setError(reason.message);
-        setAnswerStatus("error");
+      // Ignore completion/errors from an older request after Retry starts.
+      if (controllerRef.current === controller) {
+        if (controller.signal.aborted) {
+          setAnswerStatus("stopped");
+        } else {
+          setError(reason.message);
+          setAnswerStatus("error");
+        }
       }
     } finally {
       if (controllerRef.current === controller) {
